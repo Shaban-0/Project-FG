@@ -7,11 +7,15 @@ size = Vector2(672, 27)
 
 [node name="Main" type="Node2D" unique_id=585262306]
 
-[node name="Player" parent="." unique_id=1014799515 instance=ExtResource("1_o5qli")]
-position = Vector2(523, 97)
-
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=912016568]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=1995237952]
 position = Vector2(527, 143)
 shape = SubResource("RectangleShape2D_o6byh")
+
+[node name="Player" parent="." unique_id=1014799515 instance=ExtResource("1_o5qli")]
+position = Vector2(313, 97)
+
+[node name="Player2" parent="." unique_id=303443772 instance=ExtResource("1_o5qli")]
+position = Vector2(764, 97)
+input_prefix = "p2"
