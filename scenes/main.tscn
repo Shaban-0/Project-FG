@@ -3,19 +3,36 @@
 [ext_resource type="PackedScene" uid="uid://brfbusxnuh806" path="res://scenes/player.tscn" id="1_o5qli"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_o6byh"]
-size = Vector2(672, 27)
+size = Vector2(1152, 27)
 
 [node name="Main" type="Node2D" unique_id=585262306]
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=912016568]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=1995237952]
-position = Vector2(527, 143)
+position = Vector2(576, 493)
 shape = SubResource("RectangleShape2D_o6byh")
 
 [node name="Player" parent="." unique_id=1014799515 instance=ExtResource("1_o5qli")]
-position = Vector2(313, 97)
+position = Vector2(400, 445)
+
+[node name="Label" parent="Player" index="2" unique_id=1763961546]
+offset_left = -20.0
+offset_top = -60.0
+offset_right = 20.0
+offset_bottom = -37.0
+metadata/_edit_use_anchors_ = true
 
 [node name="Player2" parent="." unique_id=303443772 instance=ExtResource("1_o5qli")]
-position = Vector2(764, 97)
+position = Vector2(750, 445)
 input_prefix = "p2"
+
+[node name="Label" parent="Player2" index="2" unique_id=1763961546]
+offset_left = -20.0
+offset_top = -60.0
+offset_right = 20.0
+offset_bottom = -37.0
+metadata/_edit_use_anchors_ = true
+
+[editable path="Player"]
+[editable path="Player2"]

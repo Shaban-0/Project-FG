@@ -22,6 +22,7 @@ extends CharacterBody2D
 # Grouped at the top and named in CAPS so that game feel can be tuned in one
 # place without reading the logic below.
 
+
 const SPEED := 300.0            # horizontal movement, pixels per second
 const JUMP_VELOCITY := -450.0   # upward launch; negative because -Y is up in 2D
 const GRAVITY := 1200.0         # downward acceleration, pixels per second squared
@@ -35,6 +36,11 @@ const HIT_STUN_TIME := 0.30
 
 const MAX_HEALTH := 100.0
 
+const LIGHT_DAMAGE := 8.0
+const HEAVY_DAMAGE := 15.0
+
+var current_attack_damage: float = 0.0
+
 
 # --- Per-instance configuration ---------------------------------------------
 # Exported so it can be set separately on each fighter in the Inspector.
@@ -42,12 +48,14 @@ const MAX_HEALTH := 100.0
 # "p2_left", "p2_jump", ... This is why one script can serve both players
 # rather than duplicating the file (FR-01, FR-18, NFR-05).
 
+
 @export var input_prefix: String = "p1"
 
 
 # --- State ------------------------------------------------------------------
 # The full set of states a fighter can occupy. Using an enum rather than
 # strings means a typo is a compile-time error, not a silent bug at runtime.
+
 
 enum State { IDLE, WALK, JUMP, LIGHT_ATTACK, HEAVY_ATTACK, BLOCK, HIT, KO }
 
@@ -57,6 +65,7 @@ var health: float = MAX_HEALTH
 
 
 # --- Main loop ---------------------------------------------------------------
+
 
 ## Runs at a fixed 60 times per second. Physics and movement live here rather
 ## than in _process so that behaviour is identical regardless of frame rate.
@@ -76,10 +85,11 @@ func _physics_process(delta: float) -> void:
 
 	## Text overlay above each fighter, which updates the state changes 
 	## in real time. It's useful for debugging.
-	$Label.text = get_state_name()
+	$Label.text = "%s  %d" % [get_state_name(), health]
 
 
 # --- State machine -----------------------------------------------------------
+
 
 ## Executes the behaviour of the current state and decides its transitions.
 ## Every state is handled in exactly one place, so the rules governing what a
@@ -128,14 +138,21 @@ func _change_state(new_state: State, lock_time: float = 0.0) -> void:
 		return
 	state = new_state
 	state_timer = lock_time
+	
+	# The hitbox is live only during an attack state.
+	var attacking := new_state == State.LIGHT_ATTACK or new_state == State.HEAVY_ATTACK
+	_set_hitbox_active(attacking)
 
 
 # --- Movement helpers --------------------------------------------------------
+
 
 ## Horizontal movement while grounded, and the idle/walk distinction.
 func _ground_movement() -> void:
 	# get_axis returns -1 (left), 0 (neither or both), or +1 (right).
 	var direction := Input.get_axis(_action("left"), _action("right"))
+	if direction != 0.0:
+		facing = 1 if direction > 0.0 else -1
 	velocity.x = direction * SPEED
 	_change_state(State.WALK if direction != 0.0 else State.IDLE)
 
@@ -149,6 +166,7 @@ func _air_movement() -> void:
 
 # --- Input -------------------------------------------------------------------
 
+
 ## Actions that may be started from the ground, in priority order.
 ## Attacks and jumps use just_pressed so they fire once per press; block uses
 ## is_action_pressed because it is a held stance rather than a one-off action.
@@ -157,8 +175,10 @@ func _check_ground_actions() -> void:
 		velocity.y = JUMP_VELOCITY
 		_change_state(State.JUMP)
 	elif Input.is_action_just_pressed(_action("light")):
+		current_attack_damage = LIGHT_DAMAGE
 		_change_state(State.LIGHT_ATTACK, LIGHT_ATTACK_TIME)
 	elif Input.is_action_just_pressed(_action("heavy")):
+		current_attack_damage = HEAVY_DAMAGE
 		_change_state(State.HEAVY_ATTACK, HEAVY_ATTACK_TIME)
 	elif Input.is_action_pressed(_action("block")):
 		_change_state(State.BLOCK)
@@ -171,6 +191,7 @@ func _action(action_name: String) -> String:
 
 
 # --- Combat interface --------------------------------------------------------
+
 
 ## Called by the opponent's hitbox when this fighter is struck.
 ## Public so that the hitbox system can reach it, while the state machine's
@@ -198,3 +219,65 @@ func take_damage(amount: float) -> void:
 ## and for screenshots used as evidence in the report.
 func get_state_name() -> String:
 	return State.keys()[state]
+
+
+# --- Node references ---------------------------------------------------------
+
+
+@onready var hitbox: Area2D = $Hitbox
+@onready var hurtbox: Area2D = $Hurtbox
+@onready var hitbox_shape: CollisionShape2D = $Hitbox/CollisionShape2D
+
+# Which way this fighter is facing: 1 = right, -1 = left.
+var facing: int = 1
+
+## Configures collision layers so that a fighter's hitbox can only ever strike
+## the opponent's hurtbox, never its own. Called once when the node enters the
+## scene tree, driven by the same input_prefix that selects the input actions.
+func _ready() -> void:
+	var is_p1 := input_prefix == "p1"
+
+	# Hurtbox announces itself on this player's layer; it detects nothing.
+	# Hitbox announces nothing; it looks for the opponent's hurtbox layer.
+	# Bit values, not layer numbers: layer 1 = 1, layer 2 = 2, layer 3 = 4...
+	hurtbox.collision_layer = 1 if is_p1 else 2
+	hurtbox.collision_mask = 0
+	hitbox.collision_layer = 0
+	hitbox.collision_mask = 2 if is_p1 else 10
+
+
+	# Connect the overlap signal to our handler (FR-07).
+	hitbox.area_entered.connect(_on_hitbox_area_entered)
+
+
+	# P2 starts on the right, facing left.
+	facing = 1 if is_p1 else -1
+
+	_set_hitbox_active(false)
+	print("[%s] ready. hurtbox layer=%d, hitbox mask=%d, facing=%d"
+		% [input_prefix, hurtbox.collision_layer, hitbox.collision_mask, facing])
+
+
+## Mirrors the hitbox to whichever side the fighter is facing.
+func _update_facing() -> void:
+	hitbox_shape.position.x = abs(hitbox_shape.position.x) * facing
+
+
+## Enables or disables the attack hitbox. Kept as its own function so the state
+## machine never touches the collision shape directly (low coupling).
+func _set_hitbox_active(active: bool) -> void:
+	if active:
+		_update_facing()
+	hitbox_shape.set_deferred("disabled", not active)
+
+
+## Fired when this fighter's active hitbox overlaps an opponent hurtbox.
+## Damage is applied through the opponent's public take_damage interface, so
+## this script needs to know nothing about how their state machine works.
+func _on_hitbox_area_entered(area: Area2D) -> void:
+	var opponent := area.get_parent()
+	print("[%s] hitbox overlapped: %s" % [input_prefix, opponent.name])
+	if opponent.has_method("take_damage") and opponent != self:
+		opponent.take_damage(current_attack_damage)
+		_set_hitbox_active(false)  # one hit per attack
+		

@@ -4,7 +4,12 @@
 [ext_resource type="Script" uid="uid://bl0m4i24e5lcc" path="res://scripts/player.gd" id="1_g2els"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_o6byh"]
-size = Vector2(64, 62)
+size = Vector2(64, 64)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gcqvl"]
+size = Vector2(64, 64)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ftdsp"]
 
 [node name="Player" type="CharacterBody2D" unique_id=1014799515]
 script = ExtResource("1_g2els")
@@ -19,3 +24,14 @@ shape = SubResource("RectangleShape2D_o6byh")
 [node name="Label" type="Label" parent="." unique_id=1763961546]
 offset_right = 40.0
 offset_bottom = 23.0
+
+[node name="Hurtbox" type="Area2D" parent="." unique_id=1701333602]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox" unique_id=750855724]
+shape = SubResource("RectangleShape2D_gcqvl")
+
+[node name="Hitbox" type="Area2D" parent="." unique_id=1104065099]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox" unique_id=914829349]
+position = Vector2(50, -20)
+shape = SubResource("RectangleShape2D_ftdsp")
