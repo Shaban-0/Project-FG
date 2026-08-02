@@ -10,6 +10,7 @@ size = Vector2(64, 64)
 size = Vector2(64, 64)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ftdsp"]
+size = Vector2(70, 40)
 
 [node name="Player" type="CharacterBody2D" unique_id=1014799515]
 script = ExtResource("1_g2els")

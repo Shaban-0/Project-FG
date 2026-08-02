@@ -239,11 +239,15 @@ func _ready() -> void:
 
 	# Hurtbox announces itself on this player's layer; it detects nothing.
 	# Hitbox announces nothing; it looks for the opponent's hurtbox layer.
-	# Bit values, not layer numbers: layer 1 = 1, layer 2 = 2, layer 3 = 4...
-	hurtbox.collision_layer = 1 if is_p1 else 2
+	# Layer numbers here match the Inspector checkboxes exactly (1-based).
+	# Layer 1 = p1_hurtbox, layer 2 = p2_hurtbox.
+	hurtbox.collision_layer = 0
 	hurtbox.collision_mask = 0
+	hurtbox.set_collision_layer_value(1 if is_p1 else 2, true)
+
 	hitbox.collision_layer = 0
-	hitbox.collision_mask = 2 if is_p1 else 10
+	hitbox.collision_mask = 0
+	hitbox.set_collision_mask_value(2 if is_p1 else 1, true)
 
 
 	# Connect the overlap signal to our handler (FR-07).
@@ -252,8 +256,9 @@ func _ready() -> void:
 
 	# P2 starts on the right, facing left.
 	facing = 1 if is_p1 else -1
-
+	_update_facing()          # apply facing immediately, not just on attack
 	_set_hitbox_active(false)
+
 	print("[%s] ready. hurtbox layer=%d, hitbox mask=%d, facing=%d"
 		% [input_prefix, hurtbox.collision_layer, hitbox.collision_mask, facing])
 
@@ -261,6 +266,8 @@ func _ready() -> void:
 ## Mirrors the hitbox to whichever side the fighter is facing.
 func _update_facing() -> void:
 	hitbox_shape.position.x = abs(hitbox_shape.position.x) * facing
+	if has_node("Sprite2D"):
+		$Sprite2D.flip_h = facing < 0
 
 
 ## Enables or disables the attack hitbox. Kept as its own function so the state
