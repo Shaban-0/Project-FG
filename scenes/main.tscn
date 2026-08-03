@@ -1,11 +1,13 @@
 [gd_scene format=3 uid="uid://dws47ut6aaiva"]
 
+[ext_resource type="Script" uid="uid://bxtv26oeeunlu" path="res://scenes/match_manager.gd" id="1_0wfyh"]
 [ext_resource type="PackedScene" uid="uid://brfbusxnuh806" path="res://scenes/player.tscn" id="1_o5qli"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_o6byh"]
 size = Vector2(1152, 27)
 
 [node name="Main" type="Node2D" unique_id=585262306]
+script = ExtResource("1_0wfyh")
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=912016568]
 
@@ -15,6 +17,7 @@ shape = SubResource("RectangleShape2D_o6byh")
 
 [node name="Player" parent="." unique_id=1014799515 instance=ExtResource("1_o5qli")]
 position = Vector2(400, 445)
+opponent_path = NodePath("../Player2")
 
 [node name="Label" parent="Player" index="2" unique_id=1763961546]
 offset_left = -20.0
@@ -25,6 +28,7 @@ metadata/_edit_use_anchors_ = true
 
 [node name="Player2" parent="." unique_id=303443772 instance=ExtResource("1_o5qli")]
 position = Vector2(750, 445)
+opponent_path = NodePath("../Player")
 input_prefix = "p2"
 
 [node name="Label" parent="Player2" index="2" unique_id=1763961546]
@@ -33,6 +37,61 @@ offset_top = -60.0
 offset_right = 20.0
 offset_bottom = -37.0
 metadata/_edit_use_anchors_ = true
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=539376575]
+
+[node name="P1Health" type="ProgressBar" parent="HUD" unique_id=697378146]
+offset_right = 4.0
+offset_bottom = 27.0
+value = 100.0
+show_percentage = false
+
+[node name="P2Health" type="ProgressBar" parent="HUD" unique_id=877266069]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -4.0
+offset_bottom = 27.0
+grow_horizontal = 0
+value = 100.0
+show_percentage = false
+
+[node name="Timer" type="Label" parent="HUD" unique_id=866746480]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 23.0
+grow_horizontal = 2
+
+[node name="ControlHint" type="Label" parent="HUD" unique_id=320773058]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -23.0
+offset_right = 200.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Move: D-Pad   Jump: A   Light: X   Heavy: Y   Block: RB"
+
+[node name="RoundResult" type="Label" parent="HUD" unique_id=1561330539]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [editable path="Player"]
 [editable path="Player2"]

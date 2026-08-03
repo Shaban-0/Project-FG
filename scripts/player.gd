@@ -18,6 +18,13 @@ extends CharacterBody2D
 # =============================================================================
 
 
+## The opposing fighter. Set in the Inspector on each Player instance.
+## Used only to decide which way this fighter should face.
+@export var opponent_path: NodePath
+
+@onready var opponent: Node2D = get_node_or_null(opponent_path)
+
+
 # --- Tuning constants --------------------------------------------------------
 # Grouped at the top and named in CAPS so that game feel can be tuned in one
 # place without reading the logic below.
@@ -67,6 +74,13 @@ var health: float = MAX_HEALTH
 # --- Main loop ---------------------------------------------------------------
 
 
+## Emitted whenever this fighter's health changes, and when it is knocked out.
+## Signals keep the fighter decoupled from the HUD: the player broadcasts, and
+## whatever cares can listen (low coupling, NFR-05).
+signal health_changed(current: float, maximum: float)
+signal knocked_out
+
+
 ## Runs at a fixed 60 times per second. Physics and movement live here rather
 ## than in _process so that behaviour is identical regardless of frame rate.
 func _physics_process(delta: float) -> void:
@@ -98,6 +112,7 @@ func _run_state() -> void:
 	match state:
 		State.IDLE, State.WALK:
 			# Grounded and free to act.
+			_face_opponent()
 			_ground_movement()
 			_check_ground_actions()
 
@@ -130,6 +145,17 @@ func _run_state() -> void:
 			velocity.x = 0.0
 
 
+## Turns the fighter to face its opponent. Called only while grounded and free
+## to act, so that a fighter cannot spin round mid-attack.
+func _face_opponent() -> void:
+	if opponent == null:
+		return
+	var new_facing := 1 if opponent.global_position.x > global_position.x else -1
+	if new_facing != facing:
+		facing = new_facing
+		_update_facing()
+
+
 ## The single point of entry for every state change.
 ## Routing all transitions through one function means new behaviour (playing an
 ## animation, emitting a signal) can be added in one place later.
@@ -152,9 +178,8 @@ func _ground_movement() -> void:
 	# get_axis returns -1 (left), 0 (neither or both), or +1 (right).
 	var direction := Input.get_axis(_action("left"), _action("right"))
 	if direction != 0.0:
-		facing = 1 if direction > 0.0 else -1
-	velocity.x = direction * SPEED
-	_change_state(State.WALK if direction != 0.0 else State.IDLE)
+		velocity.x = direction * SPEED
+		_change_state(State.WALK if direction != 0.0 else State.IDLE)
 
 
 ## Air control. Kept separate from ground movement so the two can be tuned
@@ -208,9 +233,11 @@ func take_damage(amount: float) -> void:
 		return
 
 	health = max(health - amount, 0.0)
+	health_changed.emit(health, MAX_HEALTH)
 
 	if health <= 0.0:
 		_change_state(State.KO)
+		knocked_out.emit()
 	else:
 		_change_state(State.HIT, HIT_STUN_TIME)
 
