@@ -41,8 +41,10 @@ metadata/_edit_use_anchors_ = true
 [node name="HUD" type="CanvasLayer" parent="." unique_id=539376575]
 
 [node name="P1Health" type="ProgressBar" parent="HUD" unique_id=697378146]
-offset_right = 4.0
-offset_bottom = 27.0
+offset_left = 40.0
+offset_top = 30.0
+offset_right = 440.0
+offset_bottom = 70.0
 value = 100.0
 show_percentage = false
 
@@ -50,20 +52,26 @@ show_percentage = false
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -4.0
-offset_bottom = 27.0
+offset_left = -440.0
+offset_top = 30.0
+offset_right = -40.0
+offset_bottom = 70.0
 grow_horizontal = 0
 value = 100.0
+fill_mode = 1
 show_percentage = false
 
 [node name="Timer" type="Label" parent="HUD" unique_id=866746480]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -20.0
-offset_right = 20.0
-offset_bottom = 23.0
+offset_left = -50.0
+offset_top = 30.0
+offset_right = 50.0
+offset_bottom = 70.0
 grow_horizontal = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ControlHint" type="Label" parent="HUD" unique_id=320773058]
 anchors_preset = 7

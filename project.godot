@@ -98,8 +98,6 @@ p2_block={
 
 2d_physics/layer_1="p1_hurtbox"
 2d_physics/layer_2="p2_hurtbox"
-2d_physics/layer_3="p1_hitbox"
-2d_physics/layer_4="p2_hitbox"
 
 [physics]
 

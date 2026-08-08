@@ -18,11 +18,23 @@ extends CharacterBody2D
 # =============================================================================
 
 
-## The opposing fighter. Set in the Inspector on each Player instance.
-## Used only to decide which way this fighter should face.
-@export var opponent_path: NodePath
+## Emitted whenever this fighter's health changes, and when it is knocked out.
+## Signals keep the fighter decoupled from the HUD: the player broadcasts, and
+## whatever cares can listen (low coupling, NFR-05).
+signal health_changed(current: float, maximum: float)
+signal knocked_out
 
-@onready var opponent: Node2D = get_node_or_null(opponent_path)
+
+# --- State ------------------------------------------------------------------
+# The full set of states a fighter can occupy. Using an enum rather than
+# strings means a typo is a compile-time error, not a silent bug at runtime.
+
+
+enum State { IDLE, WALK, JUMP, LIGHT_ATTACK, HEAVY_ATTACK, BLOCK, HIT, KO }
+
+var state: State = State.IDLE
+var state_timer: float = 0.0    # while greater than zero, the state is locked
+var health: float = MAX_HEALTH
 
 
 # --- Tuning constants --------------------------------------------------------
@@ -46,7 +58,12 @@ const MAX_HEALTH := 100.0
 const LIGHT_DAMAGE := 8.0
 const HEAVY_DAMAGE := 15.0
 
-var current_attack_damage: float = 0.0
+
+## The opposing fighter. Set in the Inspector on each Player instance.
+## Used only to decide which way this fighter should face.
+@export var opponent_path: NodePath
+
+@onready var opponent: Node2D = get_node_or_null(opponent_path)
 
 
 # --- Per-instance configuration ---------------------------------------------
@@ -59,26 +76,78 @@ var current_attack_damage: float = 0.0
 @export var input_prefix: String = "p1"
 
 
-# --- State ------------------------------------------------------------------
-# The full set of states a fighter can occupy. Using an enum rather than
-# strings means a typo is a compile-time error, not a silent bug at runtime.
+# --- Node references ---------------------------------------------------------
 
 
-enum State { IDLE, WALK, JUMP, LIGHT_ATTACK, HEAVY_ATTACK, BLOCK, HIT, KO }
+@onready var hitbox: Area2D = $Hitbox
+@onready var hurtbox: Area2D = $Hurtbox
+@onready var hitbox_shape: CollisionShape2D = $Hitbox/CollisionShape2D
 
-var state: State = State.IDLE
-var state_timer: float = 0.0    # while greater than zero, the state is locked
-var health: float = MAX_HEALTH
+# Which way this fighter is facing: 1 = right, -1 = left.
+var facing: int = 1
+
+## Configures collision layers so that a fighter's hitbox can only ever strike
+## the opponent's hurtbox, never its own. Called once when the node enters the
+## scene tree, driven by the same input_prefix that selects the input actions.
+func _ready() -> void:
+	var is_p1 := input_prefix == "p1"
+
+	# Hurtbox announces itself on this player's layer; it detects nothing.
+	# Hitbox announces nothing; it looks for the opponent's hurtbox layer.
+	# Layer numbers here match the Inspector checkboxes exactly (1-based).
+	# Layer 1 = p1_hurtbox, layer 2 = p2_hurtbox.
+	hurtbox.collision_layer = 0
+	hurtbox.collision_mask = 0
+	hurtbox.set_collision_layer_value(1 if is_p1 else 2, true)
+
+	hitbox.collision_layer = 0
+	hitbox.collision_mask = 0
+	hitbox.set_collision_mask_value(2 if is_p1 else 1, true)
+
+
+	# Connect the overlap signal to our handler (FR-07).
+	hitbox.area_entered.connect(_on_hitbox_area_entered)
+
+
+	# P2 starts on the right, facing left.
+	facing = 1 if is_p1 else -1
+	_update_facing()          # apply facing immediately, not just on attack
+	_set_hitbox_active(false)
+
+	print("[%s] ready. hurtbox layer=%d, hitbox mask=%d, facing=%d"
+		% [input_prefix, hurtbox.collision_layer, hitbox.collision_mask, facing])
+
+
+## Mirrors the hitbox to whichever side the fighter is facing.
+func _update_facing() -> void:
+	hitbox_shape.position.x = abs(hitbox_shape.position.x) * facing
+	if has_node("Sprite2D"):
+		$Sprite2D.flip_h = facing < 0
+
+
+## Enables or disables the attack hitbox. Kept as its own function so the state
+## machine never touches the collision shape directly (low coupling).
+func _set_hitbox_active(active: bool) -> void:
+	if active:
+		_update_facing()
+	hitbox_shape.set_deferred("disabled", not active)
+
+
+## Fired when this fighter's active hitbox overlaps an opponent hurtbox.
+## Damage is applied through the opponent's public take_damage interface, so
+## this script needs to know nothing about how their state machine works.
+func _on_hitbox_area_entered(area: Area2D) -> void:
+	var target := area.get_parent()
+	if target.has_method("take_damage") and target != self:
+		target.take_damage(current_attack_damage)
+		_set_hitbox_active(false)  # one hit per attack
+		
+
+
+var current_attack_damage: float = 0.0
 
 
 # --- Main loop ---------------------------------------------------------------
-
-
-## Emitted whenever this fighter's health changes, and when it is knocked out.
-## Signals keep the fighter decoupled from the HUD: the player broadcasts, and
-## whatever cares can listen (low coupling, NFR-05).
-signal health_changed(current: float, maximum: float)
-signal knocked_out
 
 
 ## Runs at a fixed 60 times per second. Physics and movement live here rather
@@ -97,8 +166,9 @@ func _physics_process(delta: float) -> void:
 	# Applies `velocity`, resolves collisions, and refreshes is_on_floor().
 	move_and_slide()
 
-	## Text overlay above each fighter, which updates the state changes 
-	## in real time. It's useful for debugging.
+
+	# Text overlay above each fighter, which updates the state changes 
+	# in real time. It's useful for debugging.
 	$Label.text = "%s  %d" % [get_state_name(), health]
 
 
@@ -177,9 +247,8 @@ func _change_state(new_state: State, lock_time: float = 0.0) -> void:
 func _ground_movement() -> void:
 	# get_axis returns -1 (left), 0 (neither or both), or +1 (right).
 	var direction := Input.get_axis(_action("left"), _action("right"))
-	if direction != 0.0:
-		velocity.x = direction * SPEED
-		_change_state(State.WALK if direction != 0.0 else State.IDLE)
+	velocity.x = direction * SPEED
+	_change_state(State.WALK if direction != 0.0 else State.IDLE)
 
 
 ## Air control. Kept separate from ground movement so the two can be tuned
@@ -246,72 +315,3 @@ func take_damage(amount: float) -> void:
 ## and for screenshots used as evidence in the report.
 func get_state_name() -> String:
 	return State.keys()[state]
-
-
-# --- Node references ---------------------------------------------------------
-
-
-@onready var hitbox: Area2D = $Hitbox
-@onready var hurtbox: Area2D = $Hurtbox
-@onready var hitbox_shape: CollisionShape2D = $Hitbox/CollisionShape2D
-
-# Which way this fighter is facing: 1 = right, -1 = left.
-var facing: int = 1
-
-## Configures collision layers so that a fighter's hitbox can only ever strike
-## the opponent's hurtbox, never its own. Called once when the node enters the
-## scene tree, driven by the same input_prefix that selects the input actions.
-func _ready() -> void:
-	var is_p1 := input_prefix == "p1"
-
-	# Hurtbox announces itself on this player's layer; it detects nothing.
-	# Hitbox announces nothing; it looks for the opponent's hurtbox layer.
-	# Layer numbers here match the Inspector checkboxes exactly (1-based).
-	# Layer 1 = p1_hurtbox, layer 2 = p2_hurtbox.
-	hurtbox.collision_layer = 0
-	hurtbox.collision_mask = 0
-	hurtbox.set_collision_layer_value(1 if is_p1 else 2, true)
-
-	hitbox.collision_layer = 0
-	hitbox.collision_mask = 0
-	hitbox.set_collision_mask_value(2 if is_p1 else 1, true)
-
-
-	# Connect the overlap signal to our handler (FR-07).
-	hitbox.area_entered.connect(_on_hitbox_area_entered)
-
-
-	# P2 starts on the right, facing left.
-	facing = 1 if is_p1 else -1
-	_update_facing()          # apply facing immediately, not just on attack
-	_set_hitbox_active(false)
-
-	print("[%s] ready. hurtbox layer=%d, hitbox mask=%d, facing=%d"
-		% [input_prefix, hurtbox.collision_layer, hitbox.collision_mask, facing])
-
-
-## Mirrors the hitbox to whichever side the fighter is facing.
-func _update_facing() -> void:
-	hitbox_shape.position.x = abs(hitbox_shape.position.x) * facing
-	if has_node("Sprite2D"):
-		$Sprite2D.flip_h = facing < 0
-
-
-## Enables or disables the attack hitbox. Kept as its own function so the state
-## machine never touches the collision shape directly (low coupling).
-func _set_hitbox_active(active: bool) -> void:
-	if active:
-		_update_facing()
-	hitbox_shape.set_deferred("disabled", not active)
-
-
-## Fired when this fighter's active hitbox overlaps an opponent hurtbox.
-## Damage is applied through the opponent's public take_damage interface, so
-## this script needs to know nothing about how their state machine works.
-func _on_hitbox_area_entered(area: Area2D) -> void:
-	var opponent := area.get_parent()
-	print("[%s] hitbox overlapped: %s" % [input_prefix, opponent.name])
-	if opponent.has_method("take_damage") and opponent != self:
-		opponent.take_damage(current_attack_damage)
-		_set_hitbox_active(false)  # one hit per attack
-		
