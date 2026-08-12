@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bxtv26oeeunlu" path="res://scripts/match_manager.gd" id="1_0wfyh"]
 [ext_resource type="PackedScene" uid="uid://brfbusxnuh806" path="res://scenes/player.tscn" id="1_o5qli"]
+[ext_resource type="Texture2D" uid="uid://d3vcuei8cokia" path="res://assets/stages/backgrounds/bamboo_stage.png" id="2_sugp2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_o6byh"]
 size = Vector2(1152, 27)
@@ -9,6 +10,10 @@ size = Vector2(1152, 27)
 [node name="Main" type="Node2D" unique_id=585262306]
 process_mode = 3
 script = ExtResource("1_0wfyh")
+
+[node name="BambooStage" type="Sprite2D" parent="." unique_id=452457271]
+position = Vector2(576, 324)
+texture = ExtResource("2_sugp2")
 
 [node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=912016568]
 
@@ -139,6 +144,7 @@ grow_vertical = 2
 
 [node name="ResultLabel" type="Label" parent="HUD/ResultOverlay/VBox" unique_id=818380794]
 layout_mode = 2
+horizontal_alignment = 1
 
 [node name="RematchButton" type="Button" parent="HUD/ResultOverlay/VBox" unique_id=1659577065]
 layout_mode = 2
@@ -183,6 +189,7 @@ grow_vertical = 2
 [node name="Label" type="Label" parent="HUD/PauseOverlay/VBox" unique_id=1964569713]
 layout_mode = 2
 text = "PAUSED"
+horizontal_alignment = 1
 
 [node name="ResumeButton" type="Button" parent="HUD/PauseOverlay/VBox" unique_id=769153161]
 layout_mode = 2
