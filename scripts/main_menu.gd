@@ -1,32 +1,20 @@
 extends Control
 
-# =============================================================================
-#  main_menu.gd — title screen
+# Title screen. A visitor at an open-day stand needs two options, start a match
+# or quit, so that is all this offers.
 #
-#  Attached to:  the root Control node of scenes/main_menu.tscn
-#  Requirements: FR-15, FR-19, NFR-11
-#
-#  Purpose
-#  -------
-#  The entry point of the game. Offers the two options a visitor at an open-day
-#  stand needs — start a match, or quit — and nothing else.
-#
-#  Controller operation
-#  --------------------
-#  Focus is given to the Start button as soon as the scene loads. Without an
-#  explicitly focused control, Godot's UI navigation has no starting point and a
-#  controller appears to do nothing. Placing the buttons inside a VBoxContainer
-#  means up and down navigation between them works without any manual wiring
-#  of focus neighbours (FR-19).
-# =============================================================================
+# The buttons sit inside a VBoxContainer, which gives up and down navigation
+# between them for free. The only thing that has to be done by hand is giving
+# one of them focus on load, since without a focused control Godot's UI
+# navigation has no starting point and the controller appears to do nothing.
 
 
 @onready var start_button: Button = $VBox/StartButton
 
 
 func _ready() -> void:
-	# Clear any pause state left over from a previous match, so the menu is
-	# responsive even if the player quit from a paused game.
+	# Clears any pause left over from quitting a match through the pause menu,
+	# otherwise the menu loads frozen.
 	get_tree().paused = false
 	start_button.grab_focus()
 

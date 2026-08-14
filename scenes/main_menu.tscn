@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bf3ssgyif1vlk"]
 
 [ext_resource type="Script" uid="uid://cw21ub4yauski" path="res://scripts/main_menu.gd" id="1_l6cm7"]
+[ext_resource type="Texture2D" uid="uid://d3vcuei8cokia" path="res://assets/stages/backgrounds/bamboo_stage.png" id="2_ekxnf"]
 
 [node name="MainMenu" type="Control" unique_id=186489994]
 layout_mode = 3
@@ -10,6 +11,22 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_l6cm7")
+
+[node name="BambooStage" type="Sprite2D" parent="." unique_id=1736223003]
+position = Vector2(576, 324)
+texture = ExtResource("2_ekxnf")
+
+[node name="ProjectTitle" type="Label" parent="." unique_id=124987398]
+layout_mode = 0
+offset_left = 270.0
+offset_top = 99.0
+offset_right = 885.0
+offset_bottom = 157.0
+theme_override_colors/font_color = Color(10.008031, 10.008031, 10.008031, 1)
+theme_override_colors/font_outline_color = Color(0.078431375, 0.078431375, 0.101960786, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 42
+text = "FIGHTING GAME MASTERPIECE"
 
 [node name="VBox" type="VBoxContainer" parent="." unique_id=770067313]
 layout_mode = 1
@@ -25,17 +42,46 @@ offset_bottom = 20.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Label" type="Label" parent="VBox" unique_id=124987398]
-layout_mode = 2
-text = "PROJECT FGM"
-
 [node name="StartButton" type="Button" parent="VBox" unique_id=150563435]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.078431375, 0.078431375, 0.101960786, 1)
+theme_override_constants/outline_size = 8
 text = "START"
 
 [node name="QuitButton" type="Button" parent="VBox" unique_id=984054126]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.078431375, 0.078431375, 0.101960786, 1)
+theme_override_constants/outline_size = 8
 text = "QUIT"
+
+[node name="MenuControlHint1" type="Label" parent="." unique_id=1630088019]
+layout_mode = 0
+offset_left = 373.0
+offset_top = 390.0
+offset_right = 783.0
+offset_bottom = 413.0
+theme_override_colors/font_color = Color(10.008031, 10.008031, 10.008031, 1)
+theme_override_colors/font_outline_color = Color(0.078431375, 0.078431375, 0.101960786, 1)
+theme_override_constants/outline_size = 8
+text = "Press Up or Down on the D-Pad to choose an option
+and
+ Press A to select"
+horizontal_alignment = 1
+
+[node name="MenuControlHint2" type="Label" parent="." unique_id=2102390230]
+layout_mode = 0
+offset_left = 484.0
+offset_top = 508.0
+offset_right = 669.0
+offset_bottom = 557.0
+theme_override_colors/font_color = Color(10.008031, 10.008031, 10.008031, 1)
+theme_override_colors/font_outline_color = Color(0.078431375, 0.078431375, 0.101960786, 1)
+theme_override_constants/outline_size = 8
+text = "2 players
+Connect two controllers"
+horizontal_alignment = 1
 
 [connection signal="pressed" from="VBox/StartButton" to="." method="_on_start_pressed"]
 [connection signal="pressed" from="VBox/QuitButton" to="." method="_on_quit_pressed"]
